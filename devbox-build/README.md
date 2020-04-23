@@ -1,7 +1,7 @@
-[![Crates.io](https://img.shields.io/crates/v/devbox.svg)](https://crates.io/crates/devbox)
+[![Crates.io](https://img.shields.io/crates/v/devbox-build.svg)](https://crates.io/crates/devbox-build)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-# Devbox
+# devbox-build
 
 
 

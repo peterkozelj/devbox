@@ -1,7 +1,30 @@
-extern crate proc_macro;
+
+//! A library of test related macros and functions
+//!
+//! # Test macro
+//! This is a macro complementing Rust's standard `#[test]` macro that adds test parametrization
+//! capabilty to test functions. Macro emits a new standard Rust test for each set of named
+//! arguments (also called a case):
+//! ```rust
+//! #[devbox_test::test(
+//!     char_a: 97, 'a';
+//!     char_b: 98, 'b';
+//! )]
+//! fn parametrized_test_for(code:_, letter:_) {
+//!     assert_eq!(code, letter as u8);
+//! }
+//! ```
+//!
+//! Should produce:
+//! ```txt
+//! test parametrized_test_for__char_a ... ok
+//! test parametrized_test_for__char_b ... ok
+//! ```
+//!
+//! Macro can be applied mutiple times to a test function forming a cartesian product.
+//! See the macro documentation for detailed description and example.
 
 use std::iter::FromIterator;
-
 use proc_macro::TokenStream;
 use proc_macro2::{Ident, Span};
 use proc_macro_error::{emit_error, proc_macro_error};
@@ -41,16 +64,19 @@ use syn::{
 /// # Example
 ///
 /// The following example have two cases named `char_a` and `char_b`
-///
-///     #[devbox_test::test(
-///         char_a: 97, 'a';
-///         char_b: 98, 'b';)]
-///     #[devbox_test::test(
-///         offset_0: 0;
-///         offset_1: 1 ! "code incorrect";)]
-///     fn parametrized_test_for(code:_, letter:_, offset:_) {
-///         assert_eq!(code + offset, letter as u8, "Letter code incorrect");
-///     }
+/// ```rust
+/// #[devbox_test::test(
+///     char_a: 97, 'a';
+///     char_b: 98, 'b';
+/// )]
+/// #[devbox_test::test(
+///     offset_0: 0;
+///     offset_1: 1 ! "code incorrect";
+/// )]
+/// fn parametrized_test_for(code:_, letter:_, offset:_) {
+///     assert_eq!(code + offset, letter as u8, "Letter code incorrect");
+/// }
+/// ```
 ///
 /// Should produce:
 /// ```txt

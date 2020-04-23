@@ -1,7 +1,7 @@
 [![Crates.io](https://img.shields.io/crates/v/devbox.svg)](https://crates.io/crates/devbox)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-# Devbox
+# devbox
 
 A collection of small build related librarires intended to be used as `dev-dependencies`
 
@@ -18,13 +18,15 @@ devbox = { version = "0.1" }
 This is a macro complementing Rust's standard `#[test]` macro that adds test parametrization
 capabilty to test functions. Macro emits a new standard Rust test for each set of named
 arguments (also called a case):
-
-    #[devbox::test(
-        char_a: 97, 'a';
-        char_b: 98, 'b';)]
-    fn parametrized_test_for(code:_, letter:_) {
-        assert_eq!(code, letter as u8);
-    }
+```rust
+#[devbox::test(
+    char_a: 97, 'a';
+    char_b: 98, 'b';
+)]
+fn parametrized_test_for(code:_, letter:_) {
+    assert_eq!(code, letter as u8);
+}
+```
 
 Should produce:
 ```txt

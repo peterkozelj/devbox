@@ -1,0 +1,6 @@
+[workspace]
+members = [
+  "devbox-test",
+  "devbox-build",
+  "devbox"
+]

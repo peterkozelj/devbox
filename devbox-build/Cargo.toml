@@ -1,0 +1,21 @@
+[package]
+name = "devbox-build"
+version = "0.1.0"
+authors = ["Peter Koželj"]
+description = "Developer toolbox for writing build.rs build sripts"
+repository = "https://github.com/peterkozelj/devbox"
+documentation = "https://docs.rs/devbox/0.1.0"
+readme = "../README.md"
+license = "MIT"
+categories = ["development-tools"]
+edition = "2018"
+publish = false
+
+[dependencies]
+filetime = "0.2.7"
+globset = "0.4.4"
+walkdir = "2"
+
+[dev-dependencies]
+devbox-test = { path = "../devbox-test", version = "0.1.0" }
+tempfile = "3"

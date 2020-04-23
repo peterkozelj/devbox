@@ -1,0 +1,16 @@
+[package]
+name = "devbox"
+version = "0.1.0"
+authors = ["Peter Koželj"]
+description = "Developer toolbox for building and testing"
+repository = "https://github.com/peterkozelj/devbox"
+documentation = "https://docs.rs/devbox/0.1.0"
+readme = "../README.md"
+license = "MIT"
+categories = ["development-tools"]
+edition = "2018"
+publish = false
+
+[dependencies]
+devbox-test = { path = "../devbox-test", version = "0.1.0" }
+devbox-build = { path = "../devbox-build", version = "0.1.0" }

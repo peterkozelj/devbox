@@ -1,6 +1,6 @@
 [package]
 name = "devbox"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 authors = ["Peter Koželj"]
 description = "Developer toolbox for building and testing"
 repository = "https://github.com/peterkozelj/devbox"
@@ -13,4 +13,4 @@ publish = false
 
 [dependencies]
 devbox-test = { path = "../devbox-test", version = "0.1.0" }
-devbox-build = { path = "../devbox-build", version = "0.1.0" }
+devbox-build = { path = "../devbox-build", version = "0.1.0-alpha.1" }

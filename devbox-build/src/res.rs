@@ -8,18 +8,25 @@ pub trait Resource {
     fn timestamp(&self) -> Option<std::time::SystemTime>;
 }
 
-pub trait MkFrom<R:Resource, S:AsRef<R>, F:FnOnce() -> ()> {
-    fn mk_from(&self, description: &str, src: S, by: F);
+pub trait MkFrom<R:Resource, S:AsRef<R>> {
+
+    fn mk_from<F>(&self, description: &str, src: S, by: F) where F: FnOnce() -> ();
+
+    fn mk_from_safe<F>(&self, description: &str, src: S, by: F) where F: FnOnce() -> Result<(), Box<dyn std::error::Error>> {
+        self.mk_from(description, src, || {
+            by().expect(format!("Making '{}' FAILED", description).as_str());
+        })
+    }
 }
 
-impl<T:Resource, R:Resource, S:AsRef<R>, F:FnOnce() -> ()> MkFrom<R, S, F> for T {
+impl<T:Resource, R:Resource, S:AsRef<R>> MkFrom<R, S> for T {
 
     //TODO: test
-    fn mk_from(&self, description: &str, src: S, by: F) {
+    fn mk_from<F>(&self, description: &str, src: S, by: F) where F: FnOnce() -> () {
         let target_time = self.timestamp();
         if target_time == None || src.as_ref().timestamp() > target_time {
             println!("Building: {}", description);
-            by()
+            by();
         }
     }
 }
@@ -43,7 +50,7 @@ impl<I:Resource, J:Iterator<Item=I>, T:IntoIterator<Item=I, IntoIter=J> + Clone>
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #[derive(Debug,Clone)]
-pub struct Set<T> { 
+pub struct Set<T> {
     pub items: Vec<T> //TODO: replace with HashSet or BTreSet
 }
 

@@ -1,11 +1,11 @@
 [package]
 name = "devbox-build"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 authors = ["Peter Koželj"]
-description = "Developer toolbox for writing build.rs build sripts"
+description = "Library for writing build.rs build sripts"
 repository = "https://github.com/peterkozelj/devbox"
 documentation = "https://docs.rs/devbox/0.1.0"
-readme = "../README.md"
+readme = "README.md"
 license = "MIT"
 categories = ["development-tools"]
 edition = "2018"

@@ -43,9 +43,7 @@ make writing of build sripts a bit easier. It focuses on file manipulation and g
 checking file stamps to avoid unnecessary build steps. It resembels *Makefiles* in what it
 tries to do.
 
-## Example
-
-This build sripts builds a web application located in project `root/webapp` inside the target
+Example build sripts builds a web application located in project `root/webapp` inside the target
 directory using NPM by installing all JS dependencies and running build script through NPM.
 Built web app is then embedded into Rust binary by packing it as a Rust source code. All
 the steps are done only on clean build or if relevant resources were changed since last build.

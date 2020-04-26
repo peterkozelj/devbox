@@ -1,11 +1,22 @@
 
-//! Adds parametrization capabilty to `#[test]` via [#\[args\]] attribute macro.
+//! Adds parametrization capabilty to `#[test]` via `#[args]` attribute macro.
+//!
+//! # To install via umbrella devbox crate
+//!
+//! ```toml
+//! [dev-dependencies]
+//! devbox = { version = "0.1" }
+//! ```
+//!
+//! # Simplest example
 //!
 //! ```rust
-//! #[devbox::test(
+//! # use devbox_test_args::args;
+//! #[args(
 //!     char_a: 97, 'a';
 //!     char_b: 98, 'b';
 //! )]
+//! #[test]
 //! fn parametrized_test_for(code:_, letter:_) {
 //!     assert_eq!(code, letter as u8);
 //! }
@@ -13,7 +24,7 @@
 //!
 //! Check [#\[args\]] attribute for full example and usage specification.
 //!
-//! [#\[args\]]: attr.args.html
+//! [#\[args\]]: https://doc.rust-lang.org/devbox_test_args/attr.args.html
 
 use std::iter::FromIterator;
 use proc_macro::TokenStream;

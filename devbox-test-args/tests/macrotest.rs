@@ -1,5 +1,7 @@
 use devbox_test_args::{args, test_args};
 
+//-- #[args] ---------------------------------------------------------------------------------------
+
 #[args]
 #[test]
 fn args_noargs() {
@@ -18,6 +20,8 @@ fn args_noargs() {
 fn args_cartesic(code:_, letter:_, offset:_) {
     assert_eq!(code + offset, letter as u8, "Letter code incorrect");
 }
+
+//-- #[test_args] ----------------------------------------------------------------------------------
 
 #[test_args]
 fn test_noargs() {

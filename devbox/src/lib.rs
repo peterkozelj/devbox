@@ -44,8 +44,8 @@
 //! the steps are done only on clean build or if relevant resources were changed since last build.
 //!
 //! ```rust,no_run
-//! use std::{io::Write, process::Command};
-//! use devbox::build::{Build, MkFrom};
+//! # use std::{io::Write, process::Command};
+//! # use devbox::build::{Build, MkFrom};
 
 //! let build = Build::new();
 //!

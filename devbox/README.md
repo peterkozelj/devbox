@@ -49,8 +49,6 @@ Built web app is then embedded into Rust binary by packing it as a Rust source c
 the steps are done only on clean build or if relevant resources were changed since last build.
 
 ```rust
-use std::{io::Write, process::Command};
-use devbox::build::{Build, MkFrom};
 let build = Build::new();
 
 //-- Setup web app build dir inside of Rust target directory -----------------------------------

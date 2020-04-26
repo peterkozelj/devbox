@@ -1,12 +1,8 @@
 
-//! A library of test related macros and functions
+//! Adds parametrization capabilty to `#[test]` via [#\[args\]] attribute macro.
 //!
-//! # Test macro
-//! This is a macro complementing Rust's standard `#[test]` macro that adds test parametrization
-//! capabilty to test functions. Macro emits a new standard Rust test for each set of named
-//! arguments (also called a case):
 //! ```rust
-//! #[devbox_test::test(
+//! #[devbox::test(
 //!     char_a: 97, 'a';
 //!     char_b: 98, 'b';
 //! )]
@@ -15,19 +11,14 @@
 //! }
 //! ```
 //!
-//! Should produce:
-//! ```txt
-//! test parametrized_test_for__char_a ... ok
-//! test parametrized_test_for__char_b ... ok
-//! ```
+//! Check [#\[args\]] attribute for full example and usage specification.
 //!
-//! Macro can be applied mutiple times to a test function forming a cartesian product.
-//! See the macro documentation for detailed description and example.
+//! [#\[args\]]: attr.args.html
 
 use std::iter::FromIterator;
 use proc_macro::TokenStream;
 use proc_macro2::{Ident, Span};
-use proc_macro_error::{emit_error, proc_macro_error};
+use proc_macro_error::{abort, emit_error, proc_macro_error};
 use quote::quote;
 use syn::{
     parse_macro_input, Block, Expr, FnArg, ItemFn, LitStr, Local, Pat, Result, Stmt, Token,
@@ -36,10 +27,18 @@ use syn::{
     token::{Eq, Let, Semi},
 };
 
-/// This is a macro complementing Rust's standard `#[test]` macro adding test parametrization.
+//-- Macros ----------------------------------------------------------------------------------------
+
+/// This is an attribute complementing Rust's standard `#[test]` attribute for test parametrization.
 ///
 /// A test function can have any number of parameters which can have anonymouse types that will
-/// be filled in by the macro based on supplied arguments.
+/// be filled in by the attribute based it's arguments.
+///
+/// Make sure attribute is applied before the standard Rust `#[test]` attribute or you will
+/// get *functions used as tests can not have any arguments* error. You can also use [`test_args`]
+/// attribute instead which appends the `#[test]` automatically.
+///
+/// [`test_args`]: attr.test_args.html
 ///
 /// # Test case
 ///
@@ -63,16 +62,21 @@ use syn::{
 ///
 /// # Example
 ///
-/// The following example have two cases named `char_a` and `char_b`
+/// The following example have two cases named `char_a` and `char_b` in first attribute and
+/// `offset_0` and `offset_1` in the second which combines into four tests:
+///
 /// ```rust
-/// #[devbox_test::test(
+/// # use devbox_test_args::args;
+///
+/// #[args(
 ///     char_a: 97, 'a';
 ///     char_b: 98, 'b';
 /// )]
-/// #[devbox_test::test(
+/// #[args(
 ///     offset_0: 0;
 ///     offset_1: 1 ! "code incorrect";
 /// )]
+/// #[test]
 /// fn parametrized_test_for(code:_, letter:_, offset:_) {
 ///     assert_eq!(code + offset, letter as u8, "Letter code incorrect");
 /// }
@@ -87,19 +91,41 @@ use syn::{
 /// ```
 #[proc_macro_attribute]
 #[proc_macro_error]
-pub fn test(attr: TokenStream, input: TokenStream) -> TokenStream {
+pub fn args(attr: TokenStream, input: TokenStream) -> TokenStream {
+    apply_test_args(attr, input, false)
+}
+
+
+/// Same as [`args`] but applying standard Rust `#[test]` attribute automatically
+///
+/// [`args`]: attr.args.html
+///
+#[proc_macro_attribute]
+#[proc_macro_error]
+pub fn test_args(attr: TokenStream, input: TokenStream) -> TokenStream {
+    apply_test_args(attr, input, true)
+}
+
+//-- Implemenatation -------------------------------------------------------------------------------
+
+/// Main entry point for both macros
+fn apply_test_args(attr: TokenStream, input: TokenStream, append_test_attr: bool) -> TokenStream {
     let cases = parse_macro_input!(attr as Cases);
     let input = parse_macro_input!(input as ItemFn);
+
+    if cases.0.len() == 0 {
+        let test = test_attribute(&input, append_test_attr);
+        return quote!{
+            #test
+            #input
+        }.into();
+    }
 
     let mut output = quote!{};
     for case in cases.0 {
         let should_panic = case.panics.clone().map(|e| quote!{ #[should_panic(expected = #e)] });
-        let func = make_case(&input, case);
-        let test = if func.sig.inputs.len() == 0 || !has_test_attribute(&func) {
-            Some(quote!{ #[test] }  )
-        } else {
-            None
-        };
+        let func = make_case_function(&input, case);
+        let test = test_attribute(&func, append_test_attr);
 
         output.extend(quote!{
             #test
@@ -107,15 +133,26 @@ pub fn test(attr: TokenStream, input: TokenStream) -> TokenStream {
             #func
         });
     }
-
     output.into()
 }
 
-fn has_test_attribute(func: &ItemFn) -> bool {
-    func.attrs.iter().any(|a| a.path.segments.last().map_or(false, |seg|seg.ident=="test"))
+/// Checks if the test function already has the `#[test]` attribute applied
+fn test_attribute(func: &ItemFn, add_if_needed: bool) -> Option<proc_macro2::TokenStream> {
+    if func.sig.inputs.len() > 0 ||
+       func.attrs.iter().any(|a| a.path.segments.last().map_or(false, |seg|seg.ident=="test"))
+    {
+        return None;
+    }
+
+    if add_if_needed {
+        Some(quote!{ #[test] })
+    } else {
+        abort!(func, "Devbox: Function '{}' is missing '#[test]' attribute", func.sig.ident);
+    }
 }
 
-fn make_case(input: &ItemFn, case: Case) -> ItemFn {
+/// Clones `input` function with arguments for attribute `case` applied
+fn make_case_function(input: &ItemFn, case: Case) -> ItemFn {
     if case.values.len() > input.sig.inputs.len() {
         emit_error!(
             input,
@@ -135,28 +172,29 @@ fn make_case(input: &ItemFn, case: Case) -> ItemFn {
             insert_param(&mut func.block, arg, expr);
         }
     }
-    func.sig.inputs = syn::punctuated::Punctuated::from_iter(args);
 
+    func.sig.inputs = syn::punctuated::Punctuated::from_iter(args);
     func
 }
 
+/// Replaces one function parameter with one attribute case argument
 fn insert_param(block: &mut Box<Block>, arg: FnArg, init:Box<Expr>){
     match arg {
-        FnArg::Typed(arg) => {
-            block.stmts.insert(0, Stmt::Local(Local {
-                attrs: vec![],
-                let_token: Let { span: Span::call_site() },
-                pat: Pat::Type(arg),
-                init: Some((Eq{ spans: [Span::call_site()] }, init)),
-                semi_token: Semi { spans: [Span::call_site()] },
-            }))
-        },
+        FnArg::Typed(arg) => block.stmts.insert(0, Stmt::Local(Local {
+            attrs: vec![],
+            let_token: Let { span: Span::call_site() },
+            pat: Pat::Type(arg),
+            init: Some((Eq{ spans: [Span::call_site()] }, init)),
+            semi_token: Semi { spans: [Span::call_site()] },
+        })),
         FnArg::Receiver(_) => emit_error!(
             arg,
             "Devbox: Parametrized test applied to non-associated function"
         )
     }
 }
+
+//-- Attribute parser ------------------------------------------------------------------------------
 
 struct Case {
     pub ident: Ident,
@@ -191,7 +229,7 @@ impl Parse for Case {
     }
 }
 
-struct Cases(pub Punctuated<Case, Token![;]>);
+struct Cases(Punctuated<Case, Token![;]>);
 
 impl Parse for Cases {
     fn parse(input: ParseStream) -> Result<Self> {

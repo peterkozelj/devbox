@@ -12,5 +12,5 @@ edition = "2018"
 publish = false
 
 [dependencies]
-devbox-test = { path = "../devbox-test", version = "0.1.0" }
+devbox-test-args = { path = "../devbox-test-args", version = "0.1.0" }
 devbox-build = { path = "../devbox-build", version = "0.1.0-alpha.1" }

@@ -17,5 +17,5 @@ globset = "0.4.4"
 walkdir = "2"
 
 [dev-dependencies]
-devbox-test = { path = "../devbox-test", version = "0.1.0" }
+devbox-test-args = { path = "../devbox-test-args", version = "0.1.0" }
 tempfile = "3"

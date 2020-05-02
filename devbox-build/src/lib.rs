@@ -81,6 +81,7 @@
 //!         ", mappings));
 //!     });
 //! }
+//! ```
 
 mod build;
 mod cmd;

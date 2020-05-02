@@ -1,40 +1,71 @@
-//use super::File;
+use std::{fmt::Debug, ops::Add, time::SystemTime};
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Resource
-////////////////////////////////////////////////////////////////////////////////////////////////////
+//-- Resource --------------------------------------------------------------------------------------
 
-pub trait Resource {
-    fn timestamp(&self) -> Option<std::time::SystemTime>;
-}
+/// A resource represents anything that is input or output of a build step.
+///
+/// Typical resources are files and directories with build steps like copying, moving, linking or
+/// invoking external commands.
+///
+/// The main resource property is it's optional timestamp. Build steps should treat output resources
+/// without one as out of date and build it unconditionally. When input resource does not have it's
+/// timestamp it should be considered as changed and therefore rebuild the output the same way as
+/// when input is newer the output. Typical scenario for lack or timestamp is when output resources
+/// do not exists yet (clean builds)
+///
+pub trait Resource : Debug {
 
-pub trait MkFrom<R:Resource, S:AsRef<R>> {
+    /// Name of the resource used for logging and error reporting
+    //fn name(&self) -> &str;
 
-    fn mk_from<F>(&self, description: &str, src: S, by: F) where F: FnOnce() -> ();
+    /// Return resource timestamp. Can be None for input resources that should be considered as
+    /// changed in every build run or output resources that do not exists yet.
+    fn timestamp(&self) -> Option<SystemTime>;
 
-    fn mk_from_safe<F>(&self, description: &str, src: S, by: F) where F: FnOnce() -> Result<(), Box<dyn std::error::Error>> {
-        self.mk_from(description, src, || {
-            by().expect(format!("Making '{}' FAILED", description).as_str());
-        })
-    }
-}
-
-impl<T:Resource, R:Resource, S:AsRef<R>> MkFrom<R, S> for T {
-
+    /// Build the resource form a given `src` resource as a side product of given function `by`
+    /// respecting resource timestamps meaning that function `by` will only be ran if the output
+    /// needs to be build.
+    ///
+    /// This method forces the `by` function to handle any errors on it's own and stop Cargo build
+    /// using a panic. To propagate the error, use [`mk_from_result()`](#method.mk_from_result)
+    ///
     //TODO: test
-    fn mk_from<F>(&self, description: &str, src: S, by: F) where F: FnOnce() -> () {
+    fn mk_from<F, R, S>(&self, description: &str, src: S, by: F)
+        where R:Resource, S:AsRef<R>, F: FnOnce() -> ()
+    {
+        let src = src.as_ref();
         let target_time = self.timestamp();
-        if target_time == None || src.as_ref().timestamp() > target_time {
-            println!("Building: {}", description);
+        if target_time == None || src.timestamp() > target_time {
+            println!("Building: {:?} from {:?}: {}", self, src, description);
             by();
         }
     }
+
+    /// Same as [`mk_from()`](#method.mk_from) with error propagation
+    //TODO: test
+    fn mk_from_result<E, F, R, S>(&self, description: &str, src: S, by: F) -> Result<(), E>
+        where R:Resource, S:AsRef<R>, F: FnOnce() -> Result<(), E>
+    {
+        let src = src.as_ref();
+        let target_time = self.timestamp();
+        if target_time == None || src.timestamp() > target_time {
+            println!("Building: {:?} from {:?}: {}", self, src, description);
+            return by()
+        }
+
+        Ok(())
+    }
 }
 
-impl<I:Resource, J:Iterator<Item=I>, T:IntoIterator<Item=I, IntoIter=J> + Clone> Resource for T {
+//--- Resource for Resource iterables --------------------------------------------------------------
+
+/// Implement Resource for Resource iterables
+impl<R, I, T> Resource for T
+    where R:Resource, I:Iterator<Item=R>, T:IntoIterator<Item=R, IntoIter=I> + Clone + Debug
+{
 
     //TODO: test
-    fn timestamp(&self) -> Option<std::time::SystemTime> {
+    fn timestamp(&self) -> Option<SystemTime> {
         self.clone().into_iter().fold(None, |result, entry| {
             let timestamp = entry.timestamp();
             if timestamp > result {
@@ -45,13 +76,22 @@ impl<I:Resource, J:Iterator<Item=I>, T:IntoIterator<Item=I, IntoIter=J> + Clone>
     }
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Set
-////////////////////////////////////////////////////////////////////////////////////////////////////
+//-- Set -------------------------------------------------------------------------------------------
 
+/// Ordered list of owned resources
+///
+/// This is like Vec with '+' overloaded for easy adding of resources. Resources added by reference
+/// are cloned.
+///
 #[derive(Debug,Clone)]
 pub struct Set<T> {
-    pub items: Vec<T> //TODO: replace with HashSet or BTreSet
+    items: Vec<T>
+}
+
+impl<T> From<Vec<T>> for Set<T> {
+    fn from(val: Vec<T>) -> Self {
+        Set { items: val }
+    }
 }
 
 impl<T> AsRef<Set<T>> for Set<T> {
@@ -66,5 +106,23 @@ impl<T> IntoIterator for Set<T> {
 
     fn into_iter(self) -> Self::IntoIter {
         self.items.into_iter()
+    }
+}
+
+impl<R> Add<&R> for Set<R> where R: Clone {
+    type Output = Set<R>;
+
+    fn add(mut self, rhs: &R) -> Self::Output {
+        self.items.push(rhs.clone());
+        self
+    }
+}
+
+impl<R> Add<R> for Set<R> {
+    type Output = Set<R>;
+
+    fn add(mut self, rhs: R) -> Self::Output {
+        self.items.push(rhs);
+        self
     }
 }

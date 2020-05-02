@@ -1,26 +1,25 @@
 use std::io::{Read, Write};
 use devbox_build::*;
-mod devbox {
-    pub use devbox_test::test;
-}
+use devbox_test_args::args;
 
 fn file_fix() -> (tempfile::TempDir, Dir, File) {
     let temp = tempfile::tempdir().unwrap();
-    let root = Dir::new(temp.path());
+    let root = Dir::from(temp.path());
     let file = root.file("nested/foo.txt");
     (temp, root, file)
 }
 
 // create ------------------------------------------------------------------------------------------
 
-#[devbox::test(
-    safe: |file:&File| { file.create_safe().unwrap() };
+#[args(
+    safe: |file:&File| { file.create_result().unwrap() };
     easy: |file:&File| { file.create() };
     bild: |file:&File| {
         file.clone().created().touched();
         std::fs::OpenOptions::new().append(true).open(file.path()).unwrap()
     }
 )]
+#[test]
 fn file_create(create:_) {
     let (_, _, file) = file_fix();
 
@@ -35,11 +34,12 @@ fn file_create(create:_) {
 
 // link_to -----------------------------------------------------------------------------------------
 
-#[devbox::test(
-    safe: |file:&File,to| { file.link_to_safe(to).unwrap(); };
+#[args(
+    safe: |file:&File,to| { file.link_to_result(to, false).unwrap(); };
     easy: |file:&File,to| { file.link_to(to); };
     bild: |file:&File,to| { file.clone().linked_to(to); }
 )]
+#[test]
 fn file_link_to(link_to:_) {
     let (_, root, file) = file_fix();
     file.create();
@@ -51,11 +51,13 @@ fn file_link_to(link_to:_) {
     assert_eq!(file.path(), std::fs::read_link(link.path()).unwrap());
 }
 
-#[devbox::test(
-    safe: |file:&File,to| { file.link_to_safe(to).expect("Creating link"); } ! "Creating link";
+#[args(
+    forc: |file:&File,to| { file.link_to_result(to, true).expect("Link"); };
+    safe: |file:&File,to| { file.link_to_result(to, false).expect("Link"); } ! "Link";
     easy: |file:&File,to| { file.link_to(to); }           ! "Creating link";
     bild: |file:&File,to| { file.clone().linked_to(to); } ! "Creating link"
 )]
+#[test]
 fn file_link_to_overwrite_link(link_to:_) {
     let (_, root, file) = file_fix();
     file.create();
@@ -66,11 +68,13 @@ fn file_link_to_overwrite_link(link_to:_) {
     link_to(&link, &foe);
 }
 
-#[devbox::test(
-    safe: |file:&File,to| { file.link_to_safe(to).expect("Creating link"); } ! "Creating link";
+#[args(
+    forc: |file:&File,to| { file.link_to_result(to, true).expect("Link"); } ! "Link";
+    safe: |file:&File,to| { file.link_to_result(to, false).expect("Link"); } ! "Link";
     easy: |file:&File,to| { file.link_to(to); }           ! "Creating link";
     bild: |file:&File,to| { file.clone().linked_to(to); } ! "Creating link"
 )]
+#[test]
 fn file_link_to_overwrite_file(link_to:_) {
     let (_, root, file) = file_fix();
     file.create();
@@ -82,11 +86,12 @@ fn file_link_to_overwrite_file(link_to:_) {
 
 // link_from_inside --------------------------------------------------------------------------------
 
-#[devbox::test(
-    safe: |file:&File,from| { file.link_from_inside_safe(from).unwrap(); };
+#[args(
+    safe: |file:&File,from| { file.link_from_inside_result(from, false).unwrap(); };
     easy: |file:&File,from| { file.link_from_inside(from); };
     bild: |file:&File,from| { file.clone().linked_from_inside(from); };
 )]
+#[test]
 fn file_link_from_inside(link_from_inside:_) {
     let (_, root, target) = file_fix();
     let dir = root.dir("from");
@@ -98,12 +103,14 @@ fn file_link_from_inside(link_from_inside:_) {
     assert_eq!(target.path(), std::fs::read_link(dir.dir("foo.txt").path()).unwrap());
 }
 
-#[devbox::test(
-    safe: |file:&File,from| { file.link_from_inside_safe(from).expect("Creating link"); } ! "Creating link";
+#[args(
+    forc: |file:&File,from| { file.link_from_inside_result(from, true).expect("Creating link"); } ! "Creating link";
+    safe: |file:&File,from| { file.link_from_inside_result(from, false).expect("Creating link"); } ! "Creating link";
     easy: |file:&File,from| { file.link_from_inside(from); } ! "Creating link";
     bild: |file:&File,from| { file.clone().linked_from_inside(from) } ! "Creating link";
 )]
-fn file_link_from_inside_overwrite(link_from_inside:_) {
+#[test]
+fn file_link_from_inside_overwrite_file(link_from_inside:_) {
     let (_, root, target) = file_fix();
     let dir = root.dir("from");
     target.create();
@@ -112,12 +119,30 @@ fn file_link_from_inside_overwrite(link_from_inside:_) {
     link_from_inside(&target, &dir);
 }
 
+#[args(
+    forc: |file:&File,from| { file.link_from_inside_result(from, true).expect("Link"); };
+    safe: |file:&File,from| { file.link_from_inside_result(from, false).expect("Link"); } ! "Link";
+    easy: |file:&File,from| { file.link_from_inside(from); } ! "Creating link";
+    bild: |file:&File,from| { file.clone().linked_from_inside(from) } ! "Creating link";
+)]
+#[test]
+fn file_link_from_inside_overwrite_link(link_from_inside:_) {
+    let (_, root, target) = file_fix();
+    let dir = root.dir("from");
+    let another = root.file("foo.txt").touched();
+    target.create();
+
+    another.link_from_inside(&dir);
+    link_from_inside(&target, &dir);
+}
+
 // metadata ----------------------------------------------------------------------------------------
 
-#[devbox::test(
-    safe: |file:&File| { file.metadata_safe().unwrap() };
+#[args(
+    safe: |file:&File| { file.metadata_result().unwrap() };
     easy: |file:&File| { file.metadata() }
 )]
+#[test]
 fn file_metadata(metadata:_) {
     let (_, _, file) = file_fix();
     file.create();
@@ -128,10 +153,11 @@ fn file_metadata(metadata:_) {
     assert_eq!(expect.modified().unwrap(), actual.modified().unwrap());
 }
 
-#[devbox::test(
-    safe: |file:&File| { file.metadata_safe().expect("Metatdata query") } ! "Metatdata query";
+#[args(
+    safe: |file:&File| { file.metadata_result().expect("Metatdata query") } ! "Metatdata query";
     easy: |file:&File| { file.metadata() } ! "Metatdata query"
 )]
+#[test]
 fn file_metadata_nonexistent(metadata:_) {
     let (_, _, file) = file_fix();
     metadata(&file);
@@ -139,10 +165,11 @@ fn file_metadata_nonexistent(metadata:_) {
 
 // open --------------------------------------------------------------------------------------------
 
-#[devbox::test(
-    safe: |file:&File| { file.open_safe().unwrap() };
+#[args(
+    safe: |file:&File| { file.open_result().unwrap() };
     easy: |file:&File| { file.open() }
 )]
+#[test]
 fn file_open(open:_) {
     let (_, _, file) = file_fix();
     file.create().write_all(b"foo").unwrap();
@@ -151,10 +178,11 @@ fn file_open(open:_) {
     assert_eq!("foo", { let mut b = String::new(); io.read_to_string(&mut b).unwrap(); b});
 }
 
-#[devbox::test(
-    safe: |file:&File| { file.open_safe().expect("Opening file") } ! "Opening file";
+#[args(
+    safe: |file:&File| { file.open_result().expect("Opening file") } ! "Opening file";
     easy: |file:&File| { file.open() } ! "Opening file"
 )]
+#[test]
 fn file_open_nonexistent(open:_) {
     let (_, _, file) = file_fix();
      open(&file);
@@ -168,16 +196,18 @@ fn file_timestamp() {
     assert_eq!(None, file.timestamp());
 
     file.create();
-    assert_eq!(std::fs::metadata(file.path()).unwrap().modified().unwrap(), file.timestamp().unwrap());
+    assert_eq!(std::fs::metadata(file.path()).unwrap().modified().unwrap(),
+               file.timestamp().unwrap());
 }
 
 // touch -------------------------------------------------------------------------------------------
 
-#[devbox::test(
-    safe: |file:&File| { file.touch_safe().unwrap(); };
+#[args(
+    safe: |file:&File| { file.touch_result().unwrap(); };
     easy: |file:&File| { file.touch(); };
     bild: |file:&File| { file.clone().touched(); }
 )]
+#[test]
 fn file_touch(touch:_) {
     let (_, _, file) = file_fix();
 
@@ -198,18 +228,20 @@ fn file_touch(touch:_) {
 
 #[test]
 fn file_add_file() {
-    let foo = Dir::new("/a").file("foo");
-    let bar = Dir::new("/a").file("bar");
-    let mut foobar = (&foo + &bar).into_iter();
+    let foo = Dir::from("/a").file("foo");
+    let bar = Dir::from("/a").file("bar");
+    let baz = Dir::from("/a").file("baz");
+    let mut foobar = (&foo + &bar + &baz).into_iter();
     assert_eq!(Some(foo), foobar.next());
     assert_eq!(Some(bar), foobar.next());
+    assert_eq!(Some(baz), foobar.next());
     assert_eq!(None, foobar.next());
 }
 
 #[test]
 fn file_add_dir() {
-    let foo = Dir::new("/a").file("foo");
-    let bar = Dir::new("/a");
+    let foo = Dir::from("/a").file("foo");
+    let bar = Dir::from("/a");
     let mut foobar = (&foo + &bar).into_iter();
     assert_eq!(Some(Unit::File(foo)), foobar.next());
     assert_eq!(Some(Unit::Dir(bar)), foobar.next());

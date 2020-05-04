@@ -16,12 +16,12 @@ devbox = { version = "0.1" }
 
 ```rust
 #[args(
-    char_a: 97, 'a';
-    char_b: 98, 'b';
+    char_a: 'a';
+    char_b: 'b' ! "wrong char";
 )]
 #[test]
-fn parametrized_test_for(code:_, letter:_) {
-    assert_eq!(code, letter as u8);
+fn parametrized_test_for(character:_) {
+    assert_eq!('a', character, "wrong char");
 }
 ```
 

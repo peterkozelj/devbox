@@ -27,7 +27,7 @@ impl Build {
 
     /// Current directory where the build has been run from
     pub fn current_dir(&self) -> Dir {
-        env::current_dir().unwrap().into()
+        Dir::new(env::current_dir().unwrap()).unwrap()
     }
 }
 
@@ -48,13 +48,13 @@ impl Build {
     pub fn rustdoc_cmd(&self) -> Cmd { Cmd::new(env::var("RUSTDOC").unwrap()) }
 
     /// Directory containing the project manifest
-    pub fn manifest_dir(&self) -> Dir { env::var("CARGO_MANIFEST_DIR").unwrap().into() }
+    pub fn manifest_dir(&self) -> Dir { Dir::new(env::var("CARGO_MANIFEST_DIR").unwrap()).unwrap() }
 
     /// Project manifest `links` value
-    pub fn manifest_links(&self) -> String { env::var("OUT_DIR").unwrap() }
+    pub fn manifest_links(&self) -> String { env::var("CARGO_MANIFEST_LINKS").unwrap() }
 
     /// Directory in which all output should be placed
-    pub fn out_dir(&self) -> Dir { env::var("OUT_DIR").unwrap().into() }
+    pub fn out_dir(&self) -> Dir { Dir::new(env::var("OUT_DIR").unwrap()).unwrap() }
 
     /// True if cargo profile is `release` (run with --release)
     pub fn is_release_build(&self) -> bool { env::var("PROFILE").unwrap() == "release" }
@@ -70,8 +70,8 @@ impl Build {
     /// Achitecure triple of the build binaries
     pub fn target_triple(&self) -> String { env::var("TARGET").unwrap() }
 
-    /// Number ow threads to be used by the build
-    pub fn num_jobs(&self) -> u16 { u16::from_str_radix(&env::var("TARGET").unwrap(), 10).unwrap() }
+    /// Number of threads to be used by the build
+    pub fn num_jobs(&self) -> u16 { u16::from_str_radix(&env::var("NUM_JOBS").unwrap(), 10).unwrap() }
 
     /// Return configuration (check Cargo documentation above for more info)
     pub fn cfg<P:AsRef<str>>(&self, cfg: P) -> Option<String> {

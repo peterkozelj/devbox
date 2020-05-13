@@ -1,4 +1,5 @@
 use std::io::Write;
+use std::ffi::OsStr;
 use std::marker::PhantomData;
 use std::ops::Add;
 use std::path::{Component, Path, PathBuf};
@@ -256,6 +257,24 @@ impl Resource for File {
     }
 }
 
+impl AsRef<File> for File {
+    fn as_ref(&self) -> &File {
+        self
+    }
+}
+
+impl AsRef<OsStr> for File {
+    fn as_ref(&self) -> &OsStr {
+        &self.path.as_ref()
+    }
+}
+
+impl AsRef<Path> for File {
+    fn as_ref(&self) -> &Path {
+        &self.path.as_ref()
+    }
+}
+
 impl Add<&File> for &File {
     type Output = Set<File>;
 
@@ -275,12 +294,6 @@ impl Add<&Dir> for &File {
 impl std::fmt::Display for File {
     fn fmt(&self, formatter: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
         self.path.display().fmt(formatter)
-    }
-}
-
-impl<P: AsRef<Path>> From<P> for File {
-    fn from(val: P) -> Self {
-        File::new(val).unwrap()
     }
 }
 
@@ -488,6 +501,18 @@ impl AsRef<Dir> for Dir {
     }
 }
 
+impl AsRef<OsStr> for Dir {
+    fn as_ref(&self) -> &OsStr {
+        &self.path.as_ref()
+    }
+}
+
+impl AsRef<Path> for Dir {
+    fn as_ref(&self) -> &Path {
+        &self.path.as_ref()
+    }
+}
+
 impl Resource for Dir {
     fn timestamp(&self) -> Option<SystemTime> {
         if let Ok(metadata) = std::fs::metadata(&self.path) {
@@ -517,12 +542,6 @@ impl Add<&File> for &Dir {
 impl std::fmt::Display for Dir {
     fn fmt(&self, formatter: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
         self.path.display().fmt(formatter)
-    }
-}
-
-impl<P: AsRef<Path>> From<P> for Dir {
-    fn from(val: P) -> Self {
-        Dir::new(val).unwrap()
     }
 }
 

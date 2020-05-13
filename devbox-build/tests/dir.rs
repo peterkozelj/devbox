@@ -6,7 +6,7 @@ use devbox_test_args::test_args;
 
 fn dir_fix() -> (tempfile::TempDir, Dir, Dir) {
     let temp = tempfile::tempdir().unwrap();
-    let root = Dir::from(temp.path());
+    let root = Dir::new(temp.path());
     let dir = root.dir("nested/foo");
     assert_eq!(false, dir.path().exists());
     (temp, root, dir)
@@ -22,18 +22,18 @@ fn dir_accept_path_like() {
     let r_str_ref = "foo";
     let r_str_buf = "foo".to_owned();
     let r_pth_buf = PathBuf::from("foo");
-    Dir::from(a_str_ref).dir(r_str_ref).file(r_str_ref);
-    Dir::from(&a_str_buf).dir(&r_str_buf).file(&r_str_buf);
-    Dir::from(&a_pth_buf).dir(&r_pth_buf).file(&r_pth_buf);
-    Dir::from(a_str_buf.clone()).dir(r_str_buf.clone()).file(r_str_buf.clone());
-    Dir::from(a_pth_buf.clone()).dir(r_pth_buf.clone()).file(r_pth_buf.clone());
+    Dir::new(a_str_ref).dir(r_str_ref).file(r_str_ref);
+    Dir::new(&a_str_buf).dir(&r_str_buf).file(&r_str_buf);
+    Dir::new(&a_pth_buf).dir(&r_pth_buf).file(&r_pth_buf);
+    Dir::new(a_str_buf.clone()).dir(r_str_buf.clone()).file(r_str_buf.clone());
+    Dir::new(a_pth_buf.clone()).dir(r_pth_buf.clone()).file(r_pth_buf.clone());
 }
 
 // new ---------------------------------------------------------------------------------------------
 
 #[test_args(
-    easy: |p| Dir::from(p);
-    safe: |p| Dir::new(p).unwrap()
+    easy: |p| Dir::new(p);
+    safe: |p| Dir::new_safe(p).unwrap()
 )]
 #[test_args(
     simple: "/foo/bar/baz";
@@ -48,8 +48,8 @@ fn dir_new(new:_, path:_) {
 // dir ---------------------------------------------------------------------------------------------
 
 #[test_args(
-    easy: |p| Dir::from("/foo").dir(p);
-    safe: |p| Dir::from("/foo").dir_result(p).unwrap();
+    easy: |p| Dir::new("/foo").dir(p);
+    safe: |p| Dir::new("/foo").dir_result(p).unwrap();
 )]
 #[test_args(
     simple: "bar/baz";
@@ -66,8 +66,8 @@ fn dir_dir(dir:_, subdir: &str) {
 // file --------------------------------------------------------------------------------------------
 
 #[test_args(
-    easy: |p| Dir::from("/foo").file(p);
-    safe: |p| Dir::from("/foo").file_result(p).unwrap();
+    easy: |p| Dir::new("/foo").file(p);
+    safe: |p| Dir::new("/foo").file_result(p).unwrap();
 )]
 #[test_args(
     simple: "bar/baz";
@@ -232,9 +232,9 @@ fn dir_touch(touch:_) {
 
 #[test]
 fn dir_add_dir() {
-    let foo = Dir::from("/foo");
-    let bar = Dir::from("/bar");
-    let baz = Dir::from("/baz");
+    let foo = Dir::new("/foo");
+    let bar = Dir::new("/bar");
+    let baz = Dir::new("/baz");
 
     let mut foobar = (&foo + &bar + &baz).into_iter();
     assert_eq!(Some(foo), foobar.next());
@@ -245,7 +245,7 @@ fn dir_add_dir() {
 
 #[test]
 fn dir_add_file() {
-    let foo = Dir::from("/foo");
+    let foo = Dir::new("/foo");
     let baz = foo.file("baz");
     let mut foobaz = (&foo + &baz).into_iter();
     assert_eq!(Some(Unit::Dir(foo)), foobaz.next());
@@ -266,7 +266,7 @@ fn dir_add_file() {
 )]
 fn dir_content_count(glob: &str, dirs: usize, files: usize) {
     let temp = tempfile::tempdir().unwrap();
-    let root = Dir::from(temp.path());
+    let root = Dir::new(temp.path());
 
     root.dir("foo").create();
     root.file("root.rs").create();
@@ -289,7 +289,7 @@ fn dir_content_count(glob: &str, dirs: usize, files: usize) {
 #[test]
 fn dir_content_incl_excl() {
     let temp = tempfile::tempdir().unwrap();
-    let root = Dir::from(temp.path());
+    let root = Dir::new(temp.path());
 
     root.file("foo.rs").create();
     root.file("bar.js").create();
@@ -305,7 +305,7 @@ fn dir_content_incl_excl() {
 #[test]
 fn dir_content_paths() {
     let temp = tempfile::tempdir().unwrap();
-    let root = Dir::from(temp.path());
+    let root = Dir::new(temp.path());
 
     let dir = root.dir("foo").created();
     let file = dir.file("bar");
@@ -319,7 +319,7 @@ fn dir_content_paths() {
 #[test]
 fn dir_content_timestamp() {
     let temp = tempfile::tempdir().unwrap();
-    let root = Dir::from(temp.path());
+    let root = Dir::new(temp.path());
 
     let dir = root.dir("foo");
     let file = dir.file("bar");

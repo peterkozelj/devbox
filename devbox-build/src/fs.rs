@@ -308,8 +308,13 @@ pub struct Dir {
 
 impl Dir {
 
+    /// Create new Dir pointing to absolute file system `path` panicking if failed
+    pub fn new<P:AsRef<Path>>(path: P) -> Self {
+        Dir::new_safe(path).unwrap()
+    }
+
     /// Create new Dir pointing to absolute file system `path`
-    pub fn new<P:AsRef<Path>>(path: P) -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn new_safe<P:AsRef<Path>>(path: P) -> Result<Self, Box<dyn std::error::Error>> {
         match normalize(path.as_ref()) {
             Some(path) if path.is_absolute() => Ok(Dir { path }),
             _ => Err(format!("Path {0} is not absolute", path.as_ref().display()).into())

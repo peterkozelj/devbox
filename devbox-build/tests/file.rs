@@ -4,7 +4,7 @@ use devbox_test_args::args;
 
 fn file_fix() -> (tempfile::TempDir, Dir, File) {
     let temp = tempfile::tempdir().unwrap();
-    let root = Dir::from(temp.path());
+    let root = Dir::new(temp.path());
     let file = root.file("nested/foo.txt");
     (temp, root, file)
 }
@@ -228,9 +228,9 @@ fn file_touch(touch:_) {
 
 #[test]
 fn file_add_file() {
-    let foo = Dir::from("/a").file("foo");
-    let bar = Dir::from("/a").file("bar");
-    let baz = Dir::from("/a").file("baz");
+    let foo = Dir::new("/a").file("foo");
+    let bar = Dir::new("/a").file("bar");
+    let baz = Dir::new("/a").file("baz");
     let mut foobar = (&foo + &bar + &baz).into_iter();
     assert_eq!(Some(foo), foobar.next());
     assert_eq!(Some(bar), foobar.next());
@@ -240,8 +240,8 @@ fn file_add_file() {
 
 #[test]
 fn file_add_dir() {
-    let foo = Dir::from("/a").file("foo");
-    let bar = Dir::from("/a");
+    let foo = Dir::new("/a").file("foo");
+    let bar = Dir::new("/a");
     let mut foobar = (&foo + &bar).into_iter();
     assert_eq!(Some(Unit::File(foo)), foobar.next());
     assert_eq!(Some(Unit::Dir(bar)), foobar.next());

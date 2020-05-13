@@ -26,8 +26,9 @@ impl Build {
     }
 
     /// Current directory where the build has been run from
+    //TODO: how os it different to manifest dir?
     pub fn current_dir(&self) -> Dir {
-        Dir::new(env::current_dir().unwrap()).unwrap()
+        Dir::new(env::current_dir().unwrap())
     }
 }
 
@@ -48,13 +49,13 @@ impl Build {
     pub fn rustdoc_cmd(&self) -> Cmd { Cmd::new(env::var("RUSTDOC").unwrap()) }
 
     /// Directory containing the project manifest
-    pub fn manifest_dir(&self) -> Dir { Dir::new(env::var("CARGO_MANIFEST_DIR").unwrap()).unwrap() }
+    pub fn manifest_dir(&self) -> Dir { Dir::new(env::var("CARGO_MANIFEST_DIR").unwrap()) }
 
     /// Project manifest `links` value
     pub fn manifest_links(&self) -> String { env::var("CARGO_MANIFEST_LINKS").unwrap() }
 
     /// Directory in which all output should be placed
-    pub fn out_dir(&self) -> Dir { Dir::new(env::var("OUT_DIR").unwrap()).unwrap() }
+    pub fn out_dir(&self) -> Dir { Dir::new(env::var("OUT_DIR").unwrap()) }
 
     /// True if cargo profile is `release` (run with --release)
     pub fn is_release_build(&self) -> bool { env::var("PROFILE").unwrap() == "release" }

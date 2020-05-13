@@ -31,9 +31,9 @@ pub trait Resource : Debug {
     ///
     //TODO: test
     fn mk_from<F, R, S>(&self, description: &str, src: S, by: F)
-        where R:Resource, S:AsRef<R>, F: FnOnce() -> ()
+        where R:Resource, S:AsResource<R>, F: FnOnce() -> ()
     {
-        let src = src.as_ref();
+        let src = src.as_res();
         let target_time = self.timestamp();
         if target_time == None || src.timestamp() > target_time {
             println!("Building: {:?} from {:?}: {}", self, src, description);
@@ -57,23 +57,41 @@ pub trait Resource : Debug {
     }
 }
 
-//--- Resource for Resource iterables --------------------------------------------------------------
+pub trait AsResource<R> {
+    fn as_res(&self) -> &R;
+}
 
-/// Implement Resource for Resource iterables
-impl<R, I, T> Resource for T
-    where R:Resource, I:Iterator<Item=R>, T:IntoIterator<Item=R, IntoIter=I> + Clone + Debug
-{
-
-    //TODO: test
-    fn timestamp(&self) -> Option<SystemTime> {
-        self.clone().into_iter().fold(None, |result, entry| {
-            let timestamp = entry.timestamp();
-            if timestamp > result {
-                return timestamp;
-            }
-            result
-        })
+impl<R> AsResource<R> for R where R:Resource {
+    fn as_res(&self) -> &R {
+        &self
     }
+}
+
+impl<R> AsResource<R> for &R where R:Resource {
+    fn as_res(&self) -> &R {
+        self
+    }
+}
+
+//--- Resource for Vec -----------------------------------------------------------------------------
+
+impl<R> Resource for Vec<R>
+    where R:Resource
+{
+    fn timestamp(&self) -> Option<SystemTime> {
+        timestamp(self.iter())
+    }
+}
+
+//TODO: test
+pub fn timestamp<T: AsResource<R>, R: Resource>(iter: impl Iterator<Item=T>) -> Option<SystemTime> {
+    iter.fold(None, |result, entry| {
+        let timestamp = entry.as_res().timestamp();
+        if timestamp > result {
+            return timestamp;
+        }
+        result
+    })
 }
 
 //-- Set -------------------------------------------------------------------------------------------
@@ -86,27 +104,6 @@ impl<R, I, T> Resource for T
 #[derive(Debug,Clone)]
 pub struct Set<T> {
     items: Vec<T>
-}
-
-impl<T> From<Vec<T>> for Set<T> {
-    fn from(val: Vec<T>) -> Self {
-        Set { items: val }
-    }
-}
-
-impl<T> AsRef<Set<T>> for Set<T> {
-    fn as_ref(&self) -> &Set<T> {
-        self
-    }
-}
-
-impl<T> IntoIterator for Set<T> {
-    type Item = T;
-    type IntoIter = std::vec::IntoIter<Self::Item>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.items.into_iter()
-    }
 }
 
 impl<R> Add<&R> for Set<R> where R: Clone {
@@ -124,5 +121,33 @@ impl<R> Add<R> for Set<R> {
     fn add(mut self, rhs: R) -> Self::Output {
         self.items.push(rhs);
         self
+    }
+}
+
+impl<T> AsRef<Set<T>> for Set<T> {
+    fn as_ref(&self) -> &Set<T> {
+        self
+    }
+}
+
+impl<T> From<Vec<T>> for Set<T> {
+    fn from(val: Vec<T>) -> Self {
+        Set { items: val }
+    }
+}
+
+impl<T> IntoIterator for Set<T> {
+    type Item = T;
+    type IntoIter = std::vec::IntoIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.items.into_iter()
+    }
+}
+
+impl<R> Resource for Set<R> where R:Resource {
+
+    fn timestamp(&self) -> Option<SystemTime> {
+        self.items.timestamp()
     }
 }

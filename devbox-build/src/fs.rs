@@ -448,6 +448,7 @@ impl Dir {
         }
 
         if self.path.exists() {
+
             match std::fs::read_link(&self.path) {
                 Ok(target) if target != to.path && force => std::fs::remove_file(self.path())?,
                 Ok(target) if target == to.path => return Ok(()),
@@ -656,11 +657,8 @@ fn compile<G:AsRef<str>>(incl: bool, glob: G) -> (GlobMatcher, bool) {
     )
 }
 
-impl<'a> IntoIterator for DirContent<Unit> {
-    type Item = Unit;
-    type IntoIter = Box<dyn Iterator<Item=Self::Item>>;
-
-    fn into_iter(self) -> Self::IntoIter {
+impl DirContent<Unit> {
+    fn iter(&self) -> Box<dyn Iterator<Item=Unit>> {
         Box::new(self.walkdir().map(|e|
             if e.file_type().is_dir() {
                 Unit::Dir( Dir { path: e.path().to_owned() })
@@ -671,11 +669,8 @@ impl<'a> IntoIterator for DirContent<Unit> {
     }
 }
 
-impl IntoIterator for DirContent<Dir> {
-    type Item = Dir;
-    type IntoIter = Box<dyn Iterator<Item=Self::Item>>;
-
-    fn into_iter(self) -> Self::IntoIter {
+impl DirContent<Dir> {
+    fn iter(&self) -> Box<dyn Iterator<Item=Dir>> {
         Box::new(self.walkdir().filter_map(|e|
             if e.file_type().is_dir() {
                 Some(Dir { path: e.path().to_owned() })
@@ -686,11 +681,8 @@ impl IntoIterator for DirContent<Dir> {
     }
 }
 
-impl IntoIterator for DirContent<File> {
-    type Item = File;
-    type IntoIter = Box<dyn Iterator<Item=Self::Item>>;
-
-    fn into_iter(self) -> Self::IntoIter {
+impl DirContent<File> {
+    fn iter(&self) -> Box<dyn Iterator<Item=File>> {
         Box::new(self.walkdir().filter_map(|e|
             if e.file_type().is_file() {
                 Some(File { path: e.path().to_owned() })
@@ -704,5 +696,50 @@ impl IntoIterator for DirContent<File> {
 impl<T> AsRef<DirContent<T>> for DirContent<T> {
     fn as_ref(&self) -> &DirContent<T> {
         self
+    }
+}
+
+impl IntoIterator for DirContent<Unit> {
+    type Item = Unit;
+    type IntoIter = Box<dyn Iterator<Item=Self::Item>>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+impl IntoIterator for DirContent<Dir> {
+    type Item = Dir;
+    type IntoIter = Box<dyn Iterator<Item=Self::Item>>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+impl IntoIterator for DirContent<File> {
+    type Item = File;
+    type IntoIter = Box<dyn Iterator<Item=Self::Item>>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+impl Resource for DirContent<Dir> {
+    fn timestamp(&self) -> Option<SystemTime> {
+        super::res::timestamp(self.iter())
+    }
+}
+
+impl Resource for DirContent<File> {
+    fn timestamp(&self) -> Option<SystemTime> {
+        super::res::timestamp(self.iter())
+    }
+}
+
+impl Resource for DirContent<Unit> {
+    fn timestamp(&self) -> Option<SystemTime> {
+        super::res::timestamp(self.iter())
     }
 }

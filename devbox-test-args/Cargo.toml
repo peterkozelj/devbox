@@ -1,10 +1,10 @@
 [package]
 name = "devbox-test-args"
-version = "0.1.0"
+version = "0.1.2"
 authors = ["Peter Koželj"]
 description = "Parametrized tests macro"
+readme = "README.md"
 repository = "https://github.com/peterkozelj/devbox"
-documentation = "https://docs.rs/devbox_test/0.1.0"
 license = "MIT"
 categories = ["development-tools"]
 edition = "2018"

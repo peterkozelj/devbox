@@ -85,9 +85,10 @@ impl Cmd {
     /// [`std::process::Command::status()`]:
     /// https://doc.rust-lang.org/std/process/struct.Command.html#method.status
     pub fn run(&self) {
-        self.run_result().expect(format!("Command executon '{:?} {:?} {:?}' failed",
+        println!("Executing: {:?} {:?} {:?}", self.program, self.args, self.envs);
+        assert!(self.run_result().expect(format!("Command executon '{:?} {:?} {:?}' failed",
             self.program, self.args, self.envs).as_str()
-        );
+        ).success());
     }
 
     /// Run the command and return it's status.

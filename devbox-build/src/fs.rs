@@ -196,11 +196,17 @@ impl File {
         self.rewrite_result(bytes).expect(format!("Writing text {} FAILED", self).as_str())
     }
 
-    /// Writes the entire content to the file creating it if needed. This is as shorthand for
-    /// `create().write_all()`
+    /// Writes the entire content to the file if it is different then the current one
+    /// creating the file if needed.
     //TODO: test
     pub fn rewrite_result<P: AsRef<[u8]>>(&self, bytes: P) -> std::io::Result<()> {
         let bytes = bytes.as_ref();
+        if let Ok(old) = std::fs::read(&self.path) {
+            if old == bytes {
+                return Ok(())
+            }
+        }
+
         self.create().write_all(bytes)
     }
 

@@ -1,6 +1,6 @@
 [package]
 name = "devbox-build"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Peter Koželj"]
 description = "Library for writing build.rs build sripts"
 repository = "https://github.com/peterkozelj/devbox"

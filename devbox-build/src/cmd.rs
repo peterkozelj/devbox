@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::ffi::{OsStr, OsString};
 use std::io::Result;
 use std::path::PathBuf;
-use std::process::{Command, ExitStatus};
+use std::process::{Command, ExitStatus, Output};
 
 //-- Cmd -------------------------------------------------------------------------------------------
 
@@ -61,7 +61,22 @@ impl Cmd {
         self
     }
 
-    /// Run the command and exit the build with informative panic message.
+    /// Run the command and return it's output.
+    ///
+    /// This is convienece method for calling [`std::process::Command::output()`] method on command
+    /// instance retrieved by [`command`] method
+    ///
+    /// [`command`]: #method.command
+    /// [`std::process::Command::output()`]:
+    /// https://doc.rust-lang.org/std/process/struct.Command.html#method.output
+    pub fn output(&self) -> Output {
+        println!("Executing: {:?} {:?} {:?}", self.program, self.args, self.envs);
+        self.command().output().expect(format!("Command executon '{:?} {:?} {:?}' failed",
+            self.program, self.args, self.envs).as_str()
+        )
+    }
+
+    /// Run the command and exit the build with informative panic message if execution fails.
     ///
     /// This is convienece method for calling [`std::process::Command::status()`] method on command
     /// instance retrieved by [`command`] method
